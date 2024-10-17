@@ -47,12 +47,14 @@ func newOpCompleter(w io.Writer, op *Operation, width int) *opCompleter {
 }
 
 func (o *opCompleter) doSelect() {
+
 	if len(o.candidate) == 1 {
 		o.op.buf.WriteRunes(o.candidate[0])
 		o.ExitCompleteMode(false)
 		return
 	}
 	o.nextCandidate(1)
+	o.op.buf.WriteChoice(o.candidate[o.candidateChoise])
 	o.CompleteRefresh()
 }
 
@@ -123,7 +125,7 @@ func (o *opCompleter) HandleCompleteSelect(r rune) bool {
 	switch r {
 	case CharEnter, CharCtrlJ:
 		next = false
-		o.op.buf.WriteRunes(o.op.candidate[o.op.candidateChoise])
+		o.op.buf.SelectChoice(o.op.candidate[o.op.candidateChoise])
 		o.ExitCompleteMode(false)
 	case CharLineStart:
 		num := o.candidateChoise % o.candidateColNum
@@ -198,7 +200,7 @@ func (o *opCompleter) CompleteRefresh() {
 		}
 	}
 	colWidth += o.candidateOff + 1
-	same := o.op.buf.RuneSlice(-o.candidateOff)
+		same := o.op.buf.RuneSlice(-o.candidateOff)
 
 	// -1 to avoid reach the end of line
 	width := o.width - 1
@@ -281,5 +283,6 @@ func (o *opCompleter) ExitCompleteSelectMode() {
 
 func (o *opCompleter) ExitCompleteMode(revent bool) {
 	o.inCompleteMode = false
+	o.op.buf.RefeshChoice()
 	o.ExitCompleteSelectMode()
 }
