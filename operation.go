@@ -109,12 +109,10 @@ func (o *Operation) ioloop() {
 		keepInSearchMode := false
 		keepInCompleteMode := false
 		r := o.t.ReadRune()
-
 		if o.GetConfig().FuncFilterInputRune != nil {
 			var process bool
 			r, process = o.GetConfig().FuncFilterInputRune(r)
 			if !process {
-				o.t.KickRead()
 				o.buf.Refresh(nil) // to refresh the line
 				continue           // ignore this rune
 			}
@@ -323,6 +321,17 @@ func (o *Operation) ioloop() {
 			isUpdateHistory = false
 			o.history.Revert()
 			o.errchan <- &InterruptError{remain}
+		case CharSpace:
+			if o.IsSearchMode() {
+				o.SearchChar(r)
+				keepInSearchMode = true
+				break
+			}
+			o.buf.WriteRune(r)
+			if o.IsInCompleteMode() {
+				o.OnComplete()
+				keepInCompleteMode = false
+			}	
 		default:
 			if o.IsSearchMode() {
 				o.SearchChar(r)
@@ -436,10 +445,6 @@ func (o *Operation) Slice() ([]byte, error) {
 }
 
 func (o *Operation) Close() {
-	select {
-	case o.errchan <- io.EOF:
-	default:
-	}
 	o.history.Close()
 }
 
