@@ -15,10 +15,13 @@ type runeBufferBck struct {
 }
 
 type RuneBuffer struct {
-	buf    []rune
-	idx    int
-	prompt []rune
-	w      io.Writer
+	buf       []rune
+	onChoice  bool
+	choice    []rune
+	idxChoice int
+	idx       int
+	prompt    []rune
+	w         io.Writer
 
 	hadClean    bool
 	interactive bool
@@ -105,14 +108,18 @@ func (r *RuneBuffer) promptLen() int {
 func (r *RuneBuffer) RuneSlice(i int) []rune {
 	r.Lock()
 	defer r.Unlock()
-
+	idx := r.idx
+	if r.onChoice {
+		idx = r.idxChoice
+	}
 	if i > 0 {
 		rs := make([]rune, i)
-		copy(rs, r.buf[r.idx:r.idx+i])
+
+		copy(rs, r.buf[idx:idx+i])
 		return rs
 	}
 	rs := make([]rune, -i)
-	copy(rs, r.buf[r.idx+i:r.idx])
+	copy(rs, r.buf[idx+i:idx])
 	return rs
 }
 
@@ -166,6 +173,42 @@ func (r *RuneBuffer) WriteRunes(s []rune) {
 	r.Refresh(func() {
 		tail := append(s, r.buf[r.idx:]...)
 		r.buf = append(r.buf[:r.idx], tail...)
+		r.idx += len(s)
+	})
+}
+
+func (r *RuneBuffer) SelectChoice(s []rune) {
+	r.Refresh(func() {
+		if r.onChoice {
+			r.buf = append([]rune{}, r.choice...)
+			r.idx = r.idxChoice
+		}
+		tail := append(s, r.buf[r.idx:]...)
+		r.buf = append(r.buf[:r.idx], tail...)
+		r.idx += len(s)
+		r.choice = []rune{}
+		r.idxChoice = 0
+	})
+}
+
+func (r *RuneBuffer) RefeshChoice() {
+	r.choice = []rune{}
+	r.idxChoice = 0
+	r.onChoice = false
+}
+
+func (r *RuneBuffer) WriteChoice(s []rune) {
+	r.Refresh(func() {
+		if r.onChoice {
+			r.buf = append([]rune{}, r.choice...)
+			r.idx = r.idxChoice
+		}
+
+		r.choice = append([]rune{}, r.buf...)
+		tail := append(s, r.buf[r.idx:]...)
+		r.buf = append(r.buf[:r.idx], tail...)
+		r.idxChoice = r.idx
+		r.onChoice = true
 		r.idx += len(s)
 	})
 }
