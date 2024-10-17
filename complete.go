@@ -200,7 +200,7 @@ func (o *opCompleter) CompleteRefresh() {
 		}
 	}
 	colWidth += o.candidateOff + 1
-		same := o.op.buf.RuneSlice(-o.candidateOff)
+	same := o.op.buf.RuneSlice(-o.candidateOff)
 
 	// -1 to avoid reach the end of line
 	width := o.width - 1
