@@ -109,7 +109,7 @@ func (r *RuneBuffer) RuneSlice(i int) []rune {
 	r.Lock()
 	defer r.Unlock()
 	idx := r.idx
-	if r.onChoice {
+	if r.onChoice && r.onChoice + i >= 0 {
 		idx = r.idxChoice
 	}
 	if i > 0 {
